@@ -1,0 +1,30 @@
+@layer components {
+  .data-table-shell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .data-table-shell__head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+  }
+
+  .data-table-shell__title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .data-table-shell__meta {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+  }
+
+  .data-table-shell__actions {
+    margin-left: auto;
+    display: flex;
+    gap: var(--space-2);
+  }
+}

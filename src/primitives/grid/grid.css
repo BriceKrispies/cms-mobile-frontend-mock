@@ -1,0 +1,36 @@
+:host { display: block; }
+
+.grid {
+  display: grid;
+  gap: var(--_gap, var(--space-4));
+  grid-template-columns: repeat(var(--_cols, 1), minmax(0, 1fr));
+}
+
+:host([gap="0"]) { --_gap: var(--space-0); }
+:host([gap="2"]) { --_gap: var(--space-2); }
+:host([gap="3"]) { --_gap: var(--space-3); }
+:host([gap="4"]) { --_gap: var(--space-4); }
+:host([gap="6"]) { --_gap: var(--space-6); }
+:host([gap="8"]) { --_gap: var(--space-8); }
+
+/* Mobile-first column counts */
+:host { --_cols: 1; }
+:host([cols="2"]) { --_cols: 1; }
+:host([cols="3"]) { --_cols: 1; }
+:host([cols="4"]) { --_cols: 1; }
+
+@media (min-width: 30rem) {
+  :host([cols="2"]) { --_cols: 2; }
+}
+@media (min-width: 48rem) {
+  :host([cols="3"]) { --_cols: 2; }
+  :host([cols="4"]) { --_cols: 2; }
+}
+@media (min-width: 64rem) {
+  :host([cols="3"]) { --_cols: 3; }
+  :host([cols="4"]) { --_cols: 4; }
+}
+
+:host([auto-fit]) .grid {
+  grid-template-columns: repeat(auto-fit, minmax(var(--_min, 240px), 1fr));
+}

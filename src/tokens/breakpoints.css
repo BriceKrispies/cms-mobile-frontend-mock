@@ -1,0 +1,9 @@
+@layer tokens {
+  :root {
+    --bp-sm: 30rem;
+    --bp-md: 48rem;
+    --bp-lg: 64rem;
+    --bp-xl: 80rem;
+    --bp-2xl: 96rem;
+  }
+}

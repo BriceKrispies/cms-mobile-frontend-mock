@@ -1,0 +1,83 @@
+:host {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.btn {
+  --_bg: var(--color-surface);
+  --_fg: var(--color-text);
+  --_border: var(--color-border-strong);
+  --_bg-hover: var(--color-surface-alt);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--size-touch);
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  color: var(--_fg);
+  background: var(--_bg);
+  border: 1px solid var(--_border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+  white-space: nowrap;
+}
+
+.btn:hover:not([disabled]) { background: var(--_bg-hover); }
+.btn:active:not([disabled]) { transform: translateY(1px); }
+.btn:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 2px; }
+
+.btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+:host([variant="primary"]) .btn {
+  --_bg: var(--color-primary);
+  --_fg: var(--color-on-primary);
+  --_border: var(--color-primary);
+  --_bg-hover: var(--color-primary-hover);
+}
+:host([variant="ghost"]) .btn {
+  --_bg: transparent;
+  --_border: transparent;
+  --_bg-hover: var(--color-surface-alt);
+}
+:host([variant="subtle"]) .btn {
+  --_bg: var(--color-primary-soft);
+  --_fg: var(--color-primary);
+  --_border: transparent;
+  --_bg-hover: color-mix(in oklab, var(--color-primary-soft) 85%, black);
+}
+:host([variant="danger"]) .btn {
+  --_bg: var(--color-danger);
+  --_fg: #fff;
+  --_border: var(--color-danger);
+  --_bg-hover: color-mix(in oklab, var(--color-danger) 90%, black);
+}
+
+:host([size="sm"]) .btn {
+  min-height: 32px;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-xs);
+}
+:host([size="lg"]) .btn {
+  min-height: 52px;
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--font-size-md);
+}
+
+:host([full]) { display: flex; }
+:host([full]) .btn { width: 100%; }
+
+.btn__slot { display: inline-flex; align-items: center; gap: var(--space-2); }

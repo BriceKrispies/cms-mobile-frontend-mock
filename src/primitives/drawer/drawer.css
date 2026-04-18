@@ -1,0 +1,35 @@
+:host { display: contents; }
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay);
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-base) var(--ease-standard);
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 91;
+  width: min(320px, 86vw);
+  background: var(--color-surface);
+  padding: var(--space-4);
+  transform: translateX(-100%);
+  transition: transform var(--duration-base) var(--ease-emphasized);
+  box-shadow: var(--shadow-xl);
+  overflow-y: auto;
+}
+
+:host([side="right"]) .drawer {
+  left: auto;
+  right: 0;
+  transform: translateX(100%);
+}
+
+:host([open]) .scrim { opacity: 1; pointer-events: auto; }
+:host([open]) .drawer { transform: translateX(0); }

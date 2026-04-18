@@ -1,0 +1,63 @@
+@layer components {
+  .dashboard { display: flex; flex-direction: column; gap: var(--space-6); }
+
+  .dashboard__metrics > ui-grid { display: block; }
+
+  .dashboard__trend {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .trend-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-3);
+    height: 160px;
+    padding: var(--space-3) 0;
+  }
+
+  .trend-chart__bar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .trend-chart__column {
+    width: 100%;
+    max-width: 48px;
+    background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-soft) 100%);
+    border-radius: var(--radius-sm);
+    height: var(--_h, 20%);
+    transition: height var(--duration-slow) var(--ease-emphasized);
+  }
+
+  .trend-chart__label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+
+  .dashboard__recognitions {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .dashboard__loading, .dashboard__empty {
+    padding: var(--space-6);
+    text-align: center;
+    color: var(--color-text-muted);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+
+  @media (min-width: 48rem) {
+    .dashboard__layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: var(--space-6);
+      align-items: start;
+    }
+  }
+}
