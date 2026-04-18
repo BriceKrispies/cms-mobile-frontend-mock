@@ -1,0 +1,101 @@
+@layer components {
+  .schema-list__empty {
+    padding: var(--space-6);
+    text-align: center;
+    color: var(--color-text-muted);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+
+  .schema-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .schema-form__row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  @media (min-width: 30rem) {
+    .schema-form__row--two {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .schema-form__type {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .schema-form__hint {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-subtle);
+  }
+
+  .schema-form__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-subtle);
+  }
+
+  .schema-form__meta code {
+    font-family: var(--font-mono);
+    background: var(--color-surface-alt);
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-sm);
+  }
+
+  .schema-enum {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .schema-enum__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+
+  .schema-enum__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-size-xs);
+    color: var(--color-primary);
+    background: var(--color-primary-soft);
+    border-radius: var(--radius-pill);
+  }
+
+  .schema-enum__chip button {
+    color: inherit;
+    opacity: 0.7;
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+  }
+  .schema-enum__chip button:hover { opacity: 1; }
+
+  .schema-enum__add {
+    display: flex;
+    gap: var(--space-2);
+  }
+  .schema-enum__add ui-input { flex: 1; }
+
+  .schema-danger {
+    padding: var(--space-4);
+    border: 1px solid var(--color-danger-soft);
+    border-radius: var(--radius-lg);
+    background: var(--color-danger-soft);
+    color: var(--color-text);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+}

@@ -1,5 +1,25 @@
 import { mockApi } from '../../mock-data/api/mockApi.js';
 
+// Columns are opted into by id; label and value formatting come from
+// the schema registry. Adding a field in /schema and appending its id
+// here is the only way to surface a new column. Zero hardcoded labels
+// or formatters.
+const COLUMN_IDS = ['name', 'title', 'team', 'department', 'level', 'location', 'hiredAt'];
+
+function buildColumns() {
+  return COLUMN_IDS
+    .map((id) => {
+      const field = mockApi.getField(id);
+      if (!field) return null;
+      return {
+        key: id,
+        label: field.label,
+        render: (user) => mockApi.formatValue(id, user[id]),
+      };
+    })
+    .filter(Boolean);
+}
+
 async function mount({ outlet }) {
   const wrap = document.createElement('section');
   wrap.className = 'u-container';
@@ -19,13 +39,7 @@ async function mount({ outlet }) {
   const shell = wrap.querySelector('#people-shell');
   const filter = wrap.querySelector('#people-filter');
 
-  shell.columns = [
-    { key: 'name', label: 'Name' },
-    { key: 'role', label: 'Role' },
-    { key: 'team', label: 'Team' },
-    { key: 'status', label: 'Status' },
-    { key: 'joined', label: 'Joined' },
-  ];
+  shell.columns = buildColumns();
 
   const teams = await mockApi.listTeams();
   filter.chips = [{ id: 'all', label: 'All teams' }, ...teams.map((t) => ({ id: t, label: t }))];

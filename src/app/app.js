@@ -35,6 +35,7 @@ import '../features/campaigns/index.js';
 import '../features/people/index.js';
 import '../features/rewards/index.js';
 import '../features/reporting/index.js';
+import '../features/schema/index.js';
 import '../features/settings/index.js';
 
 import { initRouter } from './router.js';

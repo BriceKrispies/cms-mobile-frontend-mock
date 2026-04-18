@@ -3,9 +3,13 @@
 
 import { scenarios } from '../scenarios/index.js';
 import { appBus } from '../../utils/events.js';
+import * as schema from '../../schema/index.js';
 
 const STORAGE_KEY = 'cms:scenario';
-const initial = localStorage.getItem(STORAGE_KEY) || 'default';
+let initial = 'default';
+try {
+  initial = localStorage.getItem(STORAGE_KEY) || 'default';
+} catch { /* fall through to default */ }
 
 const state = {
   scenarioId: scenarios[initial] ? initial : 'default',
@@ -34,8 +38,15 @@ async function call(op, fn) {
   return structuredClone(fn());
 }
 
+// Every user leaving the mockApi passes through the schema so callers
+// only see declared, coerced fields. Downstream code can trust types.
+function cleanUser(user) {
+  return schema.validateUser(user);
+}
+
 function joinUser(id) {
-  return db().users.find((u) => u.id === id) ?? { id, name: 'Unknown' };
+  const raw = db().users.find((u) => u.id === id);
+  return raw ? cleanUser(raw) : { id, name: 'Unknown' };
 }
 
 function enrichRecognition(r) {
@@ -78,11 +89,27 @@ export const mockApi = {
   setScenario(id) {
     if (!scenarios[id]) throw new Error(`Unknown scenario: ${id}`);
     state.scenarioId = id;
-    localStorage.setItem(STORAGE_KEY, id);
+    try { localStorage.setItem(STORAGE_KEY, id); } catch { /* ignore */ }
     appBus.emit('mock:scenario-changed', { scenarioId: id });
   },
   setLatency(ms) { state.latencyMs = Math.max(0, ms | 0); },
   setFailRate(rate) { state.failRate = Math.min(1, Math.max(0, rate)); },
+
+  // Schema (synchronous — no latency. Same pattern as scenario controls.)
+  listFields() { return schema.listFields(); },
+  getField(id) { return schema.getField(id); },
+  createField(def) {
+    const created = schema.createField(def);
+    return created;
+  },
+  updateField(id, patch) {
+    return schema.updateField(id, patch);
+  },
+  deleteField(id) {
+    schema.deleteField(id);
+  },
+  listOperators(type) { return schema.operatorsForType(type); },
+  formatValue(fieldId, v) { return schema.formatValue(fieldId, v); },
 
   // Dashboard
   getDashboardMetrics() {
@@ -142,23 +169,30 @@ export const mockApi = {
   // People
   listPeople({ search, team } = {}) {
     return call('listPeople', () => {
-      let rows = db().users;
+      let rows = db().users.map(cleanUser);
       if (team) rows = rows.filter((u) => u.team === team);
       if (search) {
         const q = search.toLowerCase();
         rows = rows.filter((u) =>
-          u.name.toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q) ||
-          u.team.toLowerCase().includes(q) ||
-          u.role.toLowerCase().includes(q)
+          (u.name ?? '').toLowerCase().includes(q) ||
+          (u.email ?? '').toLowerCase().includes(q) ||
+          (u.team ?? '').toLowerCase().includes(q) ||
+          (u.role ?? '').toLowerCase().includes(q) ||
+          (u.title ?? '').toLowerCase().includes(q)
         );
       }
       return rows;
     });
   },
+  getUser(id) {
+    return call('getUser', () => {
+      const raw = db().users.find((u) => u.id === id);
+      return raw ? cleanUser(raw) : null;
+    });
+  },
   listTeams() {
     return call('listTeams', () => {
-      const set = new Set(db().users.map((u) => u.team));
+      const set = new Set(db().users.map((u) => u.team).filter(Boolean));
       return [...set].sort();
     });
   },
