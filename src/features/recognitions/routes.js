@@ -79,7 +79,7 @@ async function renderNew({ outlet }) {
         <div>
           <div class="u-text-sm u-text-muted u-mb-2">Values</div>
           <div style="display:flex; flex-wrap:wrap; gap: var(--space-2)" id="rec-values">
-            ${values.map((v) => `<button type="button" class="chip" data-value="${escapeHtml(v.label)}" aria-pressed="false" style="padding:4px 12px;border-radius:999px;background:var(--color-surface-alt);color:var(--color-text-muted);border:0;cursor:pointer;">${escapeHtml(v.label)}</button>`).join('')}
+            ${values.map((v) => `<button type="button" class="chip" data-value="${escapeHtml(v.label)}" aria-pressed="false" style="padding:var(--space-1) var(--space-3);border-radius:var(--radius-pill);background:var(--color-surface-alt);color:var(--color-text-muted);border:0;cursor:pointer;">${escapeHtml(v.label)}</button>`).join('')}
           </div>
         </div>
         <ui-stack direction="row" gap="2" justify="end">

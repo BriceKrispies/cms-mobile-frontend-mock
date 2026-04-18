@@ -61,7 +61,7 @@
 }
 :host([variant="danger"]) .btn {
   --_bg: var(--color-danger);
-  --_fg: #fff;
+  --_fg: var(--color-text-inverse);
   --_border: var(--color-danger);
   --_bg-hover: color-mix(in oklab, var(--color-danger) 90%, black);
 }

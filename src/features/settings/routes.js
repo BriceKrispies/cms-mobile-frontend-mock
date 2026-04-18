@@ -1,8 +1,22 @@
 import { mockApi } from '../../mock-data/api/mockApi.js';
 import { escapeHtml } from '../../utils/dom.js';
 import { navigate } from '../../app/router.js';
+import { renderAppearance } from './appearance.js';
 
-async function mount({ outlet }) {
+const styleUrl = new URL('./settings.css', import.meta.url).href;
+let styleInjected = false;
+function ensureStyle() {
+  if (styleInjected) return;
+  styleInjected = true;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = styleUrl;
+  document.head.appendChild(link);
+}
+
+async function mount({ outlet, signal }) {
+  ensureStyle();
+
   const scenarios = mockApi.listScenarios();
   const current = mockApi.getScenario();
 
@@ -15,6 +29,8 @@ async function mount({ outlet }) {
       description="Developer tools for this mock frontend."></page-header>
 
     <ui-stack gap="4">
+      <div id="appearance-slot"></div>
+
       <ui-card>
         <span slot="title">Mock scenario</span>
         <p class="u-text-muted u-text-sm">Switch the dataset the app sees without reloading.</p>
@@ -42,6 +58,9 @@ async function mount({ outlet }) {
     </ui-stack>
   `;
   outlet.appendChild(wrap);
+
+  const disposeAppearance = renderAppearance(wrap.querySelector('#appearance-slot'));
+  signal?.addEventListener('abort', () => disposeAppearance?.());
 
   wrap.querySelectorAll('[data-scenario]').forEach((btn) => {
     btn.addEventListener('click', () => {

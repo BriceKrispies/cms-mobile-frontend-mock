@@ -1,0 +1,19 @@
+@layer components {
+  .appearance-axis {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .appearance-axis__label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-muted);
+  }
+
+  .appearance-axis__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+}
