@@ -63,7 +63,7 @@ export async function mount({ outlet, signal }) {
 
   createBtn.addEventListener('click', () => navigate('/recognitions/new'));
   allBtn.addEventListener('click', () => navigate('/recognitions'));
-  scenarioBtn.addEventListener('click', () => cycleScenario(scenarioBtn));
+  scenarioBtn.addEventListener('click', () => navigate('/settings'));
 
   // --- Loading states ---
   metricsEl.innerHTML = loadingGrid(4);
@@ -130,13 +130,3 @@ function renderTrend(el, trend) {
   `).join('');
 }
 
-async function cycleScenario(button) {
-  const list = mockApi.listScenarios();
-  const current = mockApi.getScenario();
-  const idx = list.findIndex((s) => s.id === current);
-  const next = list[(idx + 1) % list.length];
-  mockApi.setScenario(next.id);
-  button.textContent = `Scenario: ${next.id}`;
-  // Re-mount by revisiting same route
-  navigate('/');
-}

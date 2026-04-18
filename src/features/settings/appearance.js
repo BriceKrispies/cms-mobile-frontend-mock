@@ -1,21 +1,29 @@
 import { escapeHtml } from '../../utils/dom.js';
-import { listAxes, getTheme, setTheme, resetTheme } from '../../theme/theme.js';
+import { listAxes, getTheme, setTheme } from '../../theme/theme.js';
 import { appBus } from '../../utils/events.js';
 
-// Renders the Appearance card into the given container, wires up all
-// axis buttons, and re-renders on theme changes from any source.
+// Appearance card with stage-and-save UX. Option clicks update local
+// pending state; nothing applies globally until the user clicks Save.
 export function renderAppearance(container) {
+  const axes = listAxes();
+  const defaults = Object.fromEntries(axes.map((a) => [a.id, a.default]));
+  let pending = getTheme();
+
+  const isDirty = () => {
+    const applied = getTheme();
+    return axes.some((axis) => pending[axis.id] !== applied[axis.id]);
+  };
+
   const draw = () => {
-    const theme = getTheme();
-    const axes = listAxes();
+    const dirty = isDirty();
 
     container.innerHTML = `
       <ui-card>
         <span slot="title">Appearance</span>
-        <ui-button slot="actions" variant="ghost" id="theme-reset">Reset</ui-button>
+        <ui-button slot="actions" variant="ghost" id="theme-reset" size="sm">Reset to defaults</ui-button>
 
         <p class="u-text-muted u-text-sm">
-          Tune the look and feel. Choices persist across reloads.
+          Tune the look and feel. Selections are staged — nothing changes until you save.
         </p>
 
         <ui-stack gap="4">
@@ -26,7 +34,7 @@ export function renderAppearance(container) {
                 ${axis.options.map((opt) => `
                   <ui-button
                     size="sm"
-                    variant="${opt.id === theme[axis.id] ? 'primary' : 'subtle'}"
+                    variant="${opt.id === pending[axis.id] ? 'primary' : 'subtle'}"
                     data-option="${escapeHtml(opt.id)}">
                     ${escapeHtml(opt.label)}
                   </ui-button>
@@ -35,6 +43,16 @@ export function renderAppearance(container) {
             </div>
           `).join('')}
         </ui-stack>
+
+        <div slot="footer" class="appearance-footer" data-dirty="${dirty}">
+          <span class="appearance-footer__status">
+            ${dirty ? 'You have unsaved changes.' : 'All changes saved.'}
+          </span>
+          <ui-stack direction="row" gap="2" justify="end">
+            <ui-button id="theme-discard" variant="ghost" ${dirty ? '' : 'disabled'}>Discard</ui-button>
+            <ui-button id="theme-save" variant="primary" ${dirty ? '' : 'disabled'}>Save changes</ui-button>
+          </ui-stack>
+        </div>
       </ui-card>
     `;
 
@@ -42,20 +60,37 @@ export function renderAppearance(container) {
       const axisId = row.dataset.axis;
       row.querySelectorAll('ui-button[data-option]').forEach((btn) => {
         btn.addEventListener('click', () => {
-          setTheme({ [axisId]: btn.dataset.option });
+          pending = { ...pending, [axisId]: btn.dataset.option };
+          draw();
         });
       });
     });
 
     container.querySelector('#theme-reset').addEventListener('click', () => {
-      resetTheme();
+      pending = { ...defaults };
+      draw();
+    });
+
+    container.querySelector('#theme-discard').addEventListener('click', () => {
+      pending = getTheme();
+      draw();
+    });
+
+    container.querySelector('#theme-save').addEventListener('click', () => {
+      setTheme(pending);
+      // After setTheme emits theme:change, the sync listener below redraws
+      // with the new applied state (dirty -> false). Nothing else to do.
     });
   };
 
   draw();
 
-  const off = appBus.on('theme:change', draw);
+  // If the theme is changed elsewhere, reconcile pending with the new
+  // applied state so the card doesn't show phantom dirty state.
+  const off = appBus.on('theme:change', () => {
+    pending = getTheme();
+    draw();
+  });
 
-  // Return a disposer the caller can invoke on unmount.
   return off;
 }
