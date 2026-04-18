@@ -4,7 +4,10 @@
     grid-template-rows: auto 1fr auto;
     min-height: 100dvh;
     background: var(--color-bg);
+    overflow-x: clip;
   }
+
+  .app-outlet { min-width: 0; }
 
   .app-header {
     position: sticky;
