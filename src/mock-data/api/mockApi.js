@@ -65,6 +65,62 @@ function enrichRecognition(r) {
   };
 }
 
+// -------- Campaign helpers: storage + enrichment with group data ---------
+
+const CAMPAIGNS_KEY = 'cms:campaigns';
+const CAMPAIGN_ID_RE = /^[a-z][a-zA-Z0-9_]*$/;
+
+function loadUserCampaigns() {
+  try {
+    const raw = localStorage.getItem(CAMPAIGNS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+}
+function saveUserCampaigns() {
+  try { localStorage.setItem(CAMPAIGNS_KEY, JSON.stringify(userCampaigns)); }
+  catch { /* ignore */ }
+}
+const userCampaigns = loadUserCampaigns();
+
+function cleanIncomingCampaign(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  if (typeof raw.id !== 'string' || !CAMPAIGN_ID_RE.test(raw.id)) return null;
+  if (typeof raw.name !== 'string' || !raw.name.trim()) return null;
+  return {
+    id: raw.id,
+    name: raw.name.trim(),
+    status: ['active', 'draft', 'archived'].includes(raw.status) ? raw.status : 'draft',
+    audienceGroupId: typeof raw.audienceGroupId === 'string' ? raw.audienceGroupId : null,
+    audienceDefinition: raw.audienceDefinition && typeof raw.audienceDefinition === 'object' ? raw.audienceDefinition : null,
+    audience: typeof raw.audience === 'string' ? raw.audience : '',
+    startsAt: typeof raw.startsAt === 'string' ? raw.startsAt : '',
+    endsAt: typeof raw.endsAt === 'string' ? raw.endsAt : '',
+    participation: typeof raw.participation === 'number' ? raw.participation : 0,
+    createdAt: raw.createdAt ?? new Date().toISOString(),
+  };
+}
+
+function enrichCampaign(c) {
+  const out = { ...c };
+  if (c.audienceGroupId) {
+    const group = groups.getGroup(c.audienceGroupId);
+    if (group) {
+      const { ids, errors } = groups.resolveGroup(c.audienceGroupId, db().users.map(cleanUser));
+      out.audienceGroup = { id: group.id, name: group.name, count: ids.size, errors, source: 'group' };
+    } else {
+      out.audienceGroup = { id: c.audienceGroupId, name: c.audience || c.audienceGroupId, count: 0, errors: ['Group missing'], source: 'group-missing' };
+    }
+  } else if (c.audienceDefinition) {
+    const { ids, errors } = groups.previewDefinition(c.audienceDefinition, db().users.map(cleanUser));
+    out.audienceGroup = { id: null, name: c.audience || 'Custom audience', count: ids.size, errors, source: 'adhoc' };
+  } else {
+    out.audienceGroup = { id: null, name: c.audience || 'Unspecified', count: 0, errors: [], source: 'legacy' };
+  }
+  return out;
+}
+
 function formatRelative(iso) {
   const then = new Date(iso).getTime();
   const now = Date.now();
@@ -213,10 +269,26 @@ export const mockApi = {
   // Campaigns
   listCampaigns({ status } = {}) {
     return call('listCampaigns', () => {
-      let rows = db().campaigns;
+      let rows = [...db().campaigns, ...userCampaigns];
       if (status) rows = rows.filter((c) => c.status === status);
-      return rows;
+      return rows.map(enrichCampaign);
     });
+  },
+  getCampaign(id) {
+    return call('getCampaign', () => {
+      const raw = [...db().campaigns, ...userCampaigns].find((c) => c.id === id);
+      return raw ? enrichCampaign(raw) : null;
+    });
+  },
+  createCampaign(def) {
+    const clean = cleanIncomingCampaign(def);
+    if (!clean) throw new Error('Invalid campaign');
+    const exists = db().campaigns.some((c) => c.id === clean.id) || userCampaigns.some((c) => c.id === clean.id);
+    if (exists) throw new Error(`Campaign "${clean.id}" already exists`);
+    userCampaigns.push(clean);
+    saveUserCampaigns();
+    appBus.emit('campaigns:change', { action: 'create', id: clean.id });
+    return enrichCampaign(clean);
   },
 
   // People

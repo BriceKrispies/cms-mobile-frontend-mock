@@ -1,0 +1,62 @@
+@layer components {
+  .camp-audience {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-2) 0;
+  }
+  .camp-audience--block {
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-alt);
+  }
+  .camp-audience__label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+  .camp-audience__count {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+  .camp-audience__err {
+    color: var(--color-danger);
+  }
+
+  .camp-bar {
+    height: 6px;
+    background: var(--color-surface-alt);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .camp-bar__fill {
+    height: 100%;
+    background: var(--color-primary);
+  }
+
+  .camp-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  .camp-form__row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  @media (min-width: 30rem) {
+    .camp-form__row--two { grid-template-columns: 1fr 1fr; }
+  }
+  .camp-form__status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  .camp-form__err {
+    margin-top: var(--space-2);
+    color: var(--color-danger);
+    font-size: var(--font-size-xs);
+  }
+}
