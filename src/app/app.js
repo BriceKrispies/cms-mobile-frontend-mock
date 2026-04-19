@@ -20,6 +20,9 @@ import '../composites/metric-card/metric-card.js';
 import '../composites/recognition-card/recognition-card.js';
 import '../composites/filter-bar/filter-bar.js';
 import '../composites/data-table-shell/data-table-shell.js';
+import '../composites/group-summary/group-summary.js';
+import '../composites/group-builder/group-builder.js';
+import '../composites/group-picker/group-picker.js';
 
 // App-level stylesheet (after tokens so it can reference variables)
 const appStyle = document.createElement('link');
@@ -36,6 +39,7 @@ import '../features/people/index.js';
 import '../features/rewards/index.js';
 import '../features/reporting/index.js';
 import '../features/schema/index.js';
+import '../features/groups/index.js';
 import '../features/settings/index.js';
 
 import { initRouter } from './router.js';

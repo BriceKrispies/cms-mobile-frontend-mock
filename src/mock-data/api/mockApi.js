@@ -4,6 +4,7 @@
 import { scenarios } from '../scenarios/index.js';
 import { appBus } from '../../utils/events.js';
 import * as schema from '../../schema/index.js';
+import * as groups from '../../groups/index.js';
 
 const STORAGE_KEY = 'cms:scenario';
 let initial = 'default';
@@ -109,7 +110,59 @@ export const mockApi = {
     schema.deleteField(id);
   },
   listOperators(type) { return schema.operatorsForType(type); },
+  operatorsForField(fieldId) { return schema.operatorsForField(fieldId); },
   formatValue(fieldId, v) { return schema.formatValue(fieldId, v); },
+
+  // Groups (synchronous — no latency. Same pattern as schema.)
+  listGroups({ search } = {}) {
+    let rows = groups.listGroups();
+    if (search) {
+      const q = search.toLowerCase();
+      rows = rows.filter((g) =>
+        g.name.toLowerCase().includes(q) ||
+        (g.description ?? '').toLowerCase().includes(q) ||
+        g.id.toLowerCase().includes(q)
+      );
+    }
+    return rows;
+  },
+  getGroup(id) { return groups.getGroup(id); },
+  createGroup(def) {
+    if (def && def.definition) {
+      const errs = groups.validateDefinition(def.definition, { ownerId: def.id });
+      if (errs.length) {
+        const msg = errs.map((e) => `${e.path}: ${e.message}`).join('; ');
+        throw new Error(`Invalid group: ${msg}`);
+      }
+    }
+    return groups.createGroup(def);
+  },
+  updateGroup(id, patch) {
+    if (patch && patch.definition) {
+      const errs = groups.validateDefinition(patch.definition, { ownerId: id });
+      if (errs.length) {
+        const msg = errs.map((e) => `${e.path}: ${e.message}`).join('; ');
+        throw new Error(`Invalid group: ${msg}`);
+      }
+    }
+    return groups.updateGroup(id, patch);
+  },
+  deleteGroup(id) { groups.deleteGroup(id); },
+  resolveGroup(id) {
+    const users = db().users.map(cleanUser);
+    const { ids, errors } = groups.resolveGroup(id, users);
+    const matched = users.filter((u) => ids.has(u.id));
+    return { users: matched, count: matched.length, errors };
+  },
+  previewDefinition(definition, { ownerId } = {}) {
+    const users = db().users.map(cleanUser);
+    const { ids, errors } = groups.previewDefinition(definition, users, { ownerId });
+    const matched = users.filter((u) => ids.has(u.id));
+    return { users: matched, count: matched.length, errors };
+  },
+  validateGroupDefinition(definition, { ownerId } = {}) {
+    return groups.validateDefinition(definition, { ownerId });
+  },
 
   // Dashboard
   getDashboardMetrics() {

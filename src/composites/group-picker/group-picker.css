@@ -1,0 +1,61 @@
+@layer components {
+  .group-picker {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .group-picker__tabs {
+    display: inline-flex;
+    background: var(--color-surface-alt);
+    border-radius: var(--radius-md);
+    padding: var(--space-1);
+    gap: var(--space-1);
+    align-self: flex-start;
+  }
+
+  .group-picker__tabs button {
+    font: inherit;
+    font-size: var(--font-size-xs);
+    border: none;
+    background: transparent;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    cursor: pointer;
+  }
+  .group-picker__tabs button.is-active {
+    background: var(--color-surface);
+    color: var(--color-text);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+  }
+
+  .group-picker__select {
+    font: inherit;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
+    min-width: 16rem;
+  }
+
+  .group-picker__preview {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    padding: var(--space-2) var(--space-3);
+    border-top: 1px dashed var(--color-border);
+  }
+
+  .group-picker__count strong {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+
+  .group-picker__errors {
+    color: var(--color-danger);
+  }
+}

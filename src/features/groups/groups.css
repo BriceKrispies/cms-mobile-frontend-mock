@@ -1,0 +1,102 @@
+@layer components {
+  .groups-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .groups-form__row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  @media (min-width: 30rem) {
+    .groups-form__row--two { grid-template-columns: 1fr 1fr; }
+  }
+
+  .groups-form__readonly {
+    padding: var(--space-3);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+  }
+
+  .groups-form__errors {
+    padding: var(--space-3);
+    border: 1px solid var(--color-danger-soft);
+    border-radius: var(--radius-md);
+    background: var(--color-danger-soft);
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+  }
+  .groups-form__errors ul {
+    margin: var(--space-2) 0 0;
+    padding-left: var(--space-4);
+  }
+  .groups-form__errors code {
+    font-family: var(--font-mono);
+  }
+
+  .groups-form__preview {
+    border-top: 1px dashed var(--color-border);
+    padding-top: var(--space-3);
+  }
+
+  .groups-form__preview-err {
+    color: var(--color-danger);
+    font-size: var(--font-size-sm);
+  }
+
+  .groups-preview {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .groups-preview__head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+  }
+  .groups-preview__head strong {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    color: var(--color-text);
+  }
+  .groups-preview__head span {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+
+  .groups-preview__sample {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+  .groups-preview__chip {
+    padding: var(--space-1) var(--space-2);
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    font-size: var(--font-size-xs);
+    border-radius: var(--radius-pill);
+  }
+  .groups-preview__more {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+
+  .groups-preview__empty {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-subtle);
+    font-style: italic;
+  }
+
+  .groups-preview__errors {
+    margin: var(--space-2) 0 0;
+    padding-left: var(--space-4);
+    color: var(--color-danger);
+    font-size: var(--font-size-xs);
+  }
+}

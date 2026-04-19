@@ -1,0 +1,100 @@
+@layer components {
+  .group-summary {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+  }
+
+  .group-summary__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .group-summary__name {
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .group-summary__desc {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    margin-top: var(--space-1);
+  }
+
+  .group-summary__count {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+  }
+
+  .group-summary__count strong {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .group-summary__count span {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+  }
+
+  .group-summary__sample {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .group-summary__avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+  }
+
+  .group-summary__more {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+
+  .group-summary__empty {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-subtle);
+    font-style: italic;
+  }
+
+  .group-summary__link {
+    align-self: flex-start;
+    color: var(--color-primary);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .group-summary__link:hover { text-decoration: underline; }
+
+  .group-summary__missing {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+  }
+  .group-summary__missing code {
+    font-family: var(--font-mono);
+    background: var(--color-surface-alt);
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-sm);
+  }
+}
