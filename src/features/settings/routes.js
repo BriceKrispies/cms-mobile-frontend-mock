@@ -2,6 +2,7 @@ import { mockApi } from '../../mock-data/api/mockApi.js';
 import { escapeHtml } from '../../utils/dom.js';
 import { appBus } from '../../utils/events.js';
 import { renderAppearance } from './appearance.js';
+import { getActingUserId, setActingUserId } from '../../analytics/storage.js';
 
 const styleUrl = new URL('./settings.css', import.meta.url).href;
 let styleInjected = false;
@@ -28,6 +29,7 @@ async function mount({ outlet, signal }) {
     <ui-stack gap="4">
       <div id="appearance-slot"></div>
       <div id="scenario-slot"></div>
+      <div id="acting-slot"></div>
       <div id="api-slot"></div>
     </ui-stack>
   `;
@@ -36,6 +38,7 @@ async function mount({ outlet, signal }) {
   const disposers = [];
   disposers.push(renderAppearance(wrap.querySelector('#appearance-slot')));
   disposers.push(renderScenario(wrap.querySelector('#scenario-slot')));
+  disposers.push(renderActingAs(wrap.querySelector('#acting-slot')));
   disposers.push(renderApiSimulation(wrap.querySelector('#api-slot')));
 
   signal?.addEventListener('abort', () => disposers.forEach((fn) => fn?.()));
@@ -101,6 +104,87 @@ function renderScenario(container) {
   const off = appBus.on('mock:scenario-changed', () => {
     pending = mockApi.getScenario();
     draw();
+  });
+  return off;
+}
+
+// --- Acting-as identity card (stage-and-save) -----------------------------
+//
+// There is no real auth in this mock; analytics records live activity
+// under the user selected here. Mostly useful for demoing the per-user
+// drill-down on /insights/analytics.
+function renderActingAs(container) {
+  let people = [];
+  let applied = getActingUserId();
+  let pending = applied;
+
+  const draw = () => {
+    const dirty = pending !== applied;
+    const appliedUser = people.find((u) => u.id === applied);
+    const status = dirty
+      ? 'Identity change is staged.'
+      : appliedUser
+        ? `Recording as: ${appliedUser.name}.`
+        : 'Recording as: (defaults to first user in scenario).';
+
+    container.innerHTML = `
+      <ui-card>
+        <span slot="title">Acting as (analytics identity)</span>
+        <p class="u-text-muted u-text-sm">
+          Analytics records live page views and clicks under this user.
+          Switch here to demo the per-user drill-down on the Insights page.
+        </p>
+        <div style="margin-top:var(--space-3)">
+          <select class="dts-ctrl__input" id="acting-select" style="min-width:16rem;max-width:100%">
+            <option value="" ${pending ? '' : 'selected'}>— default (first user) —</option>
+            ${people.map((u) => `
+              <option value="${escapeHtml(u.id)}" ${u.id === pending ? 'selected' : ''}>
+                ${escapeHtml(u.name)}${u.team ? ` · ${escapeHtml(u.team)}` : ''}
+              </option>
+            `).join('')}
+          </select>
+        </div>
+
+        <div slot="footer" class="settings-footer" data-dirty="${dirty}">
+          <span class="settings-footer__status">${escapeHtml(status)}</span>
+          <ui-stack direction="row" gap="2" justify="end">
+            <ui-button id="acting-discard" variant="ghost" ${dirty ? '' : 'disabled'}>Discard</ui-button>
+            <ui-button id="acting-save" variant="primary" ${dirty ? '' : 'disabled'}>Save changes</ui-button>
+          </ui-stack>
+        </div>
+      </ui-card>
+    `;
+
+    container.querySelector('#acting-select').addEventListener('change', (e) => {
+      pending = e.target.value || null;
+      draw();
+    });
+    container.querySelector('#acting-discard').addEventListener('click', () => {
+      pending = applied;
+      draw();
+    });
+    container.querySelector('#acting-save').addEventListener('click', () => {
+      setActingUserId(pending);
+      applied = pending;
+      draw();
+    });
+  };
+
+  // Kick off load; first render shows empty options then hydrates.
+  mockApi.listPeople().then((list) => {
+    people = [...list].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
+    draw();
+  }).catch(() => { draw(); });
+
+  draw();
+
+  const off = appBus.on('mock:scenario-changed', () => {
+    mockApi.listPeople().then((list) => {
+      people = [...list].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
+      applied = getActingUserId();
+      pending = applied;
+      draw();
+    });
   });
   return off;
 }

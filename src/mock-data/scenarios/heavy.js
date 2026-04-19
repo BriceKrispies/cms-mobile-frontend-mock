@@ -6,9 +6,11 @@ import { rewards } from '../fixtures/rewards.js';
 import { companyValues } from '../fixtures/values.js';
 import { makeUsers } from '../factories/user.js';
 import { makeRecognitions } from '../factories/recognition.js';
+import { makeAnalyticsSessions } from '../fixtures/analytics.js';
 
 const extraUsers = makeUsers(40);
 const pool = [...users, ...extraUsers];
+const heavyAnalytics = makeAnalyticsSessions(pool, { count: 400, daysBack: 30, seed: 7 });
 
 function rngRecs(n, status) {
   return Array.from({ length: n }, () => {
@@ -42,5 +44,6 @@ export const heavyScenario = {
     participationTrend: [
       { week: 'W1', value: 74 }, { week: 'W2', value: 79 }, { week: 'W3', value: 84 }, { week: 'W4', value: 89 },
     ],
+    analytics: heavyAnalytics,
   },
 };

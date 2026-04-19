@@ -26,7 +26,8 @@ Static HTML + vanilla Web Components, no build step. Entry point `index.html` lo
 
 | Route | What the user does |
 |---|---|
-| `/` · `/dashboard` · `/reporting` | View metrics and participation trend |
+| `/` · `/dashboard` | View metrics and participation trend |
+| `/insights`, `/insights/reporting`, `/insights/analytics`, `/insights/analytics/user/:userId`, `/insights/analytics/session/:sessionId` | Reporting KPIs + session-based page/click analytics with per-user and per-session drill-down |
 | `/people` | Browse the employee directory (schema-driven columns) |
 | `/schema`, `/schema/new`, `/schema/:id` | Declare / edit user fields |
 | `/groups`, `/groups/new`, `/groups/:id` | Build reusable audience definitions with a rule editor |
@@ -34,7 +35,7 @@ Static HTML + vanilla Web Components, no build step. Entry point `index.html` lo
 | `/approvals` | Review the pending-recognition queue |
 | `/recognitions`, `/recognitions/new` | Browse the feed; give a recognition |
 | `/rewards` | Browse the reward catalog |
-| `/settings` | Change theme, active mock scenario, and simulated API latency/failure rate |
+| `/settings` | Change theme, active mock scenario, analytics identity, and simulated API latency/failure rate |
 
 ## Data model
 
@@ -47,6 +48,7 @@ All entities flow through `mockApi`. Most live in-memory (hydrated from scenario
 - **Recognitions** — `{ id, fromId, toId, message, values[], points, status, createdAt }`. Enriched with full user objects on read.
 - **Approvals** — derived view over recognitions with `status: 'pending'`.
 - **Rewards**, **Values**, **Metrics**, **Participation trend** — read-only fixtures.
+- **Analytics** (`src/analytics/`) — session-based page view + click tracking. The tracker subscribes to `route:change` and a capture-phase document click listener; each scenario also seeds synthetic sessions via `src/mock-data/fixtures/analytics.js`. `mockApi` merges seed + live transparently for all `listSessions` / `listPageViews` / `listClicks` / `getAnalyticsMetrics` calls. Session boundary: 30-min idle timeout. Persisted: `localStorage:cms:analytics` (live sessions, capped at 200) and `localStorage:cms:acting-user-id` (the identity live events are recorded under, chosen in Settings).
 
 **Scenarios** (`src/mock-data/scenarios/`) — named fixture sets (default / empty / heavy). `mockApi.setScenario(id)` hot-swaps in-memory data and emits `mock:scenario-changed`. Persisted: `localStorage:cms:scenario`.
 
@@ -71,7 +73,8 @@ Emitters and the views that listen:
 | `campaigns:change` | `mockApi` (create) | Campaigns list |
 | `theme:change` | `src/theme/theme.js` | Appearance card (other cards re-render to reflect applied state) |
 | `mock:scenario-changed` | `mockApi.setScenario` | Every list view; Group summary/picker |
-| `route:change` | `src/app/router.js` | App chrome |
+| `analytics:change` | `src/analytics/tracker.js` (session/page-view/click capture) | Insights analytics + session + user-journey views |
+| `route:change` | `src/app/router.js` | App chrome; analytics tracker |
 | `nav:updated` | `src/app/registry.js` | Nav |
 
 When a feature mutates shared state, emit; when a feature displays shared state, subscribe in `mount` and unsubscribe via the `signal` `abort` event.
@@ -95,4 +98,5 @@ All settings cards in `/settings` follow the stage-and-save pattern from the top
 
 - **Theme** (`src/theme/`) — axes (color mode, contrast, font scale, …) declared in `src/theme/axes.js`; applied as `data-theme-*` attributes + custom properties on `<html>`. Stored at `localStorage:cms:theme`. Emits `theme:change`.
 - **Mock scenario** — dropdown of scenario ids. Applied via `mockApi.setScenario()`; emits `mock:scenario-changed`.
+- **Acting-as (analytics identity)** — picks which user the live analytics tracker attributes captured events to. Persisted: `localStorage:cms:acting-user-id`. Defaulted to the first user on first boot so the tracker always has an identity.
 - **API simulation** — latency (ms) and failure rate (0–1) applied to every `mockApi` call.

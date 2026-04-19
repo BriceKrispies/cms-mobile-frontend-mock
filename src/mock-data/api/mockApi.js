@@ -5,6 +5,7 @@ import { scenarios } from '../scenarios/index.js';
 import { appBus } from '../../utils/events.js';
 import * as schema from '../../schema/index.js';
 import * as groups from '../../groups/index.js';
+import { getLiveData } from '../../analytics/tracker.js';
 
 const STORAGE_KEY = 'cms:scenario';
 let initial = 'default';
@@ -335,4 +336,225 @@ export const mockApi = {
   listValues() {
     return call('listValues', () => db().companyValues);
   },
+
+  // Analytics — merges scenario-seeded fixtures with live-captured activity.
+  listSessions(opts = {}) {
+    return call('listSessions', () => filterSessions(opts));
+  },
+  getSession(id) {
+    return call('getSession', () => {
+      const all = allAnalytics();
+      const s = all.sessions.find((x) => x.id === id);
+      return s ? enrichSession(s) : null;
+    });
+  },
+  listPageViews(opts = {}) {
+    return call('listPageViews', () => filterPageViews(opts));
+  },
+  listClicks(opts = {}) {
+    return call('listClicks', () => filterClicks(opts));
+  },
+  getAnalyticsMetrics(opts = {}) {
+    return call('getAnalyticsMetrics', () => computeMetrics(opts));
+  },
 };
+
+// --------------------------- Analytics internals ---------------------------
+
+function allAnalytics() {
+  const seed = db().analytics ?? { sessions: [], pageViews: [], clicks: [] };
+  const live = safeLive();
+  return {
+    sessions: [...seed.sessions, ...live.sessions],
+    pageViews: [...seed.pageViews, ...live.pageViews],
+    clicks: [...seed.clicks, ...live.clicks],
+  };
+}
+
+function safeLive() {
+  try { return getLiveData(); } catch { return { sessions: [], pageViews: [], clicks: [] }; }
+}
+
+function userIdsForAudience({ userId, groupId }) {
+  if (userId) return new Set([userId]);
+  if (groupId) {
+    const users = db().users.map(cleanUser);
+    const { ids } = groups.resolveGroup(groupId, users);
+    return ids;
+  }
+  return null; // null === match all
+}
+
+function inRange(ts, { since, until }) {
+  if (since != null && ts < since) return false;
+  if (until != null && ts > until) return false;
+  return true;
+}
+
+function filterSessions(opts = {}) {
+  const all = allAnalytics();
+  const audience = userIdsForAudience(opts);
+  let rows = all.sessions.filter((s) => {
+    if (audience && !audience.has(s.userId)) return false;
+    if (opts.source && s.source !== opts.source) return false;
+    if (!inRange(s.startedAt, opts)) return false;
+    return true;
+  });
+  rows.sort((a, b) => b.startedAt - a.startedAt);
+  rows = rows.map(enrichSession);
+  if (opts.limit) rows = rows.slice(0, opts.limit);
+  return rows;
+}
+
+function filterPageViews(opts = {}) {
+  const all = allAnalytics();
+  const audience = userIdsForAudience(opts);
+  return all.pageViews
+    .filter((pv) => {
+      if (opts.sessionId && pv.sessionId !== opts.sessionId) return false;
+      if (audience && !audience.has(pv.userId)) return false;
+      if (!inRange(pv.enteredAt, opts)) return false;
+      return true;
+    })
+    .sort((a, b) => a.enteredAt - b.enteredAt);
+}
+
+function filterClicks(opts = {}) {
+  const all = allAnalytics();
+  const audience = userIdsForAudience(opts);
+  return all.clicks
+    .filter((c) => {
+      if (opts.sessionId && c.sessionId !== opts.sessionId) return false;
+      if (audience && !audience.has(c.userId)) return false;
+      if (!inRange(c.timestamp, opts)) return false;
+      return true;
+    })
+    .sort((a, b) => a.timestamp - b.timestamp);
+}
+
+function enrichSession(s) {
+  const user = joinUser(s.userId);
+  const durationMs = Math.max(0, (s.endedAt ?? s.startedAt) - s.startedAt);
+  return {
+    ...s,
+    user,
+    durationMs,
+    pageViewCount: s.pageViewIds?.length ?? 0,
+    clickCount: s.clickIds?.length ?? 0,
+  };
+}
+
+function computeMetrics(opts = {}) {
+  const all = allAnalytics();
+  const audience = userIdsForAudience(opts);
+
+  const sessions = all.sessions.filter((s) => {
+    if (audience && !audience.has(s.userId)) return false;
+    if (!inRange(s.startedAt, opts)) return false;
+    return true;
+  });
+  const pageViews = all.pageViews.filter((pv) => {
+    if (audience && !audience.has(pv.userId)) return false;
+    if (!inRange(pv.enteredAt, opts)) return false;
+    return true;
+  });
+  const clicks = all.clicks.filter((c) => {
+    if (audience && !audience.has(c.userId)) return false;
+    if (!inRange(c.timestamp, opts)) return false;
+    return true;
+  });
+
+  const uniqueUsers = new Set(sessions.map((s) => s.userId)).size;
+  const avgSessionDurationMs = sessions.length
+    ? sessions.reduce((acc, s) => acc + Math.max(0, (s.endedAt ?? s.startedAt) - s.startedAt), 0) / sessions.length
+    : 0;
+
+  // Top pages by visits (aggregate by route).
+  const pageAgg = new Map();
+  for (const pv of pageViews) {
+    const key = pv.route || pv.path;
+    const entry = pageAgg.get(key) ?? { route: key, path: pv.path, count: 0, totalDwellMs: 0, title: pv.title };
+    entry.count += 1;
+    entry.totalDwellMs += pv.durationMs ?? 0;
+    pageAgg.set(key, entry);
+  }
+  const topPages = [...pageAgg.values()]
+    .map((e) => ({ route: e.route, path: e.path, title: e.title, count: e.count, avgDwellMs: e.count ? e.totalDwellMs / e.count : 0 }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  // Top features by click count, with matching page-view count.
+  const featAgg = new Map();
+  for (const c of clicks) {
+    const e = featAgg.get(c.feature) ?? { feature: c.feature, clickCount: 0, pageViewCount: 0 };
+    e.clickCount += 1;
+    featAgg.set(c.feature, e);
+  }
+  for (const pv of pageViews) {
+    const f = (pv.route || pv.path).split('/').filter(Boolean)[0] ?? 'dashboard';
+    const e = featAgg.get(f) ?? { feature: f, clickCount: 0, pageViewCount: 0 };
+    e.pageViewCount += 1;
+    featAgg.set(f, e);
+  }
+  const topFeatures = [...featAgg.values()]
+    .sort((a, b) => b.clickCount - a.clickCount || b.pageViewCount - a.pageViewCount)
+    .slice(0, 8);
+
+  // Top element labels across clicks.
+  const labelAgg = new Map();
+  for (const c of clicks) {
+    const k = `${c.feature}:${c.label}`;
+    const e = labelAgg.get(k) ?? { feature: c.feature, label: c.label, count: 0 };
+    e.count += 1;
+    labelAgg.set(k, e);
+  }
+  const topElements = [...labelAgg.values()]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  // Activity buckets: last 30 days by day.
+  const dayBuckets = buildDayBuckets(30);
+  const dayKey = (ts) => {
+    const d = new Date(ts);
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+  for (const s of sessions) {
+    const k = dayKey(s.startedAt);
+    const b = dayBuckets.find((d) => d.date === k);
+    if (b) b.sessions += 1;
+  }
+  for (const c of clicks) {
+    const k = dayKey(c.timestamp);
+    const b = dayBuckets.find((d) => d.date === k);
+    if (b) b.clicks += 1;
+  }
+
+  return {
+    totalSessions: sessions.length,
+    uniqueUsers,
+    totalPageViews: pageViews.length,
+    totalClicks: clicks.length,
+    avgSessionDurationMs,
+    topPages,
+    topFeatures,
+    topElements,
+    activityByDay: dayBuckets,
+  };
+}
+
+function buildDayBuckets(days) {
+  const out = [];
+  const base = new Date();
+  base.setHours(0, 0, 0, 0);
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(base.getTime() - i * 86400000);
+    out.push({
+      date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+      sessions: 0,
+      clicks: 0,
+    });
+  }
+  return out;
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }

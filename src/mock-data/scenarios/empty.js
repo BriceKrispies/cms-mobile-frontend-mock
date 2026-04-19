@@ -20,5 +20,6 @@ export const emptyScenario = {
     participationTrend: [
       { week: 'W1', value: 0 }, { week: 'W2', value: 0 }, { week: 'W3', value: 0 }, { week: 'W4', value: 0 },
     ],
+    analytics: { sessions: [], pageViews: [], clicks: [] },
   },
 };

@@ -37,17 +37,31 @@ import '../features/approvals/index.js';
 import '../features/campaigns/index.js';
 import '../features/people/index.js';
 import '../features/rewards/index.js';
-import '../features/reporting/index.js';
+import '../features/insights/index.js';
 import '../features/schema/index.js';
 import '../features/groups/index.js';
 import '../features/settings/index.js';
 
 import { initRouter } from './router.js';
 import { getRoutes } from './registry.js';
+import { initTracker } from '../analytics/tracker.js';
+import { getActingUserId, setActingUserId } from '../analytics/storage.js';
+import { scenarios } from '../mock-data/scenarios/index.js';
+import { mockApi } from '../mock-data/api/mockApi.js';
+
+function ensureActingUser() {
+  if (getActingUserId()) return;
+  const scenarioId = mockApi.getScenario();
+  const users = scenarios[scenarioId]?.data?.users ?? [];
+  if (users[0]?.id) setActingUserId(users[0].id);
+}
 
 export function bootstrap() {
   const root = document.querySelector('app-root');
   if (!root) throw new Error('No <app-root> element found');
+
+  ensureActingUser();
+  initTracker();
 
   // Wait a microtask for custom element upgrade to attach the outlet.
   queueMicrotask(() => {
