@@ -60,7 +60,7 @@ class AppRoot extends HTMLElement {
       </a>
     `;
     this.rail.innerHTML = items.map((i) => linkHtml(i, 'rail')).join('');
-    this.bottomNav.innerHTML = items.slice(0, 5).map((i) => linkHtml(i, 'bottom')).join('');
+    this.bottomNav.innerHTML = items.slice(0, 6).map((i) => linkHtml(i, 'bottom')).join('');
     this.drawer.innerHTML = `
       <div class="app-drawer__body">
         <h2 class="app-drawer__title">Menu</h2>
