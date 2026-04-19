@@ -17,15 +17,6 @@ export async function mountSession({ outlet, params, signal }) {
   ensureInsightsStyle();
   const sessionId = params.sessionId;
 
-  const wrap = document.createElement('section');
-  wrap.className = 'u-container insights';
-  wrap.innerHTML = `
-    <div id="ses-header"></div>
-    ${tabStripHtml('analytics')}
-    <div id="ses-body"></div>
-  `;
-  outlet.appendChild(wrap);
-
   const draw = async () => {
     const [session, pageViews, clicks] = await Promise.all([
       mockApi.getSession(sessionId),
@@ -34,37 +25,43 @@ export async function mountSession({ outlet, params, signal }) {
     ]);
     if (signal?.aborted) return;
 
+    // Build the entire page detached so page-header's connectedCallback
+    // sees its [slot="actions"] children when it runs on attach.
+    const wrap = document.createElement('section');
+    wrap.className = 'u-container insights';
+
     if (!session) {
-      wrap.querySelector('#ses-header').innerHTML = `
+      wrap.innerHTML = `
         <page-header eyebrow="Insights · Analytics" title="Session not found" description="This session may have been cleared."></page-header>
-      `;
-      wrap.querySelector('#ses-body').innerHTML = `
+        ${tabStripHtml('analytics')}
         <div class="insights-empty">
           Session <code>${escapeHtml(sessionId)}</code> not found.
-          <div style="margin-top:var(--space-2)"><button type="button" class="insights-linklike" id="ses-back">Back to analytics</button></div>
+          <div style="margin-top:var(--space-2)">
+            <button type="button" class="insights-linklike" id="ses-back">Back to analytics</button>
+          </div>
         </div>
       `;
+      outlet.replaceChildren(wrap);
       wrap.querySelector('#ses-back')?.addEventListener('click', () => navigate('/insights/analytics'));
       return;
     }
 
     const user = session.user;
-    wrap.querySelector('#ses-header').innerHTML = `
+    const desc = `${formatAbsoluteTime(session.startedAt)} → ${formatAbsoluteTime(session.endedAt ?? session.startedAt)} · ${formatDurationMs(session.durationMs)} · ${session.source}`;
+
+    wrap.innerHTML = `
       <page-header
         eyebrow="Insights · Analytics"
         title="Session · ${escapeHtml(user?.name ?? 'Unknown')}"
-        description="${escapeHtml(formatAbsoluteTime(session.startedAt))} → ${escapeHtml(formatAbsoluteTime(session.endedAt ?? session.startedAt))} · ${escapeHtml(formatDurationMs(session.durationMs))} · ${escapeHtml(session.source)}">
+        description="${escapeHtml(desc)}">
         <div slot="actions">
           <ui-button variant="ghost" id="ses-user">View user journey</ui-button>
           <ui-button variant="ghost" id="ses-back">← Back to analytics</ui-button>
         </div>
       </page-header>
-    `;
-    wrap.querySelector('#ses-user').addEventListener('click', () => navigate(`/insights/analytics/user/${encodeURIComponent(session.userId)}`));
-    wrap.querySelector('#ses-back').addEventListener('click', () => navigate('/insights/analytics'));
 
-    const body = wrap.querySelector('#ses-body');
-    body.innerHTML = `
+      ${tabStripHtml('analytics')}
+
       <ui-grid cols="3" gap="4">
         <metric-card label="Page views" value="${pageViews.length}" tone="flat"></metric-card>
         <metric-card label="Clicks" value="${clicks.length}" tone="flat"></metric-card>
@@ -78,7 +75,12 @@ export async function mountSession({ outlet, params, signal }) {
       </ui-card>
     `;
 
-    renderTimeline(body.querySelector('#ses-timeline'), pageViews, clicks);
+    outlet.replaceChildren(wrap);
+
+    wrap.querySelector('#ses-user')?.addEventListener('click', () => navigate(`/insights/analytics/user/${encodeURIComponent(session.userId)}`));
+    wrap.querySelector('#ses-back')?.addEventListener('click', () => navigate('/insights/analytics'));
+
+    renderTimeline(wrap.querySelector('#ses-timeline'), pageViews, clicks);
   };
 
   await draw();
@@ -91,6 +93,7 @@ export async function mountSession({ outlet, params, signal }) {
 }
 
 function renderTimeline(el, pageViews, clicks) {
+  if (!el) return;
   if (!pageViews.length && !clicks.length) {
     el.innerHTML = `<div class="insights-empty">No activity in this session.</div>`;
     return;

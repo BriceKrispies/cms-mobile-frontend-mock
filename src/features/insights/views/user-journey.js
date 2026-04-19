@@ -17,58 +17,57 @@ export async function mountUserJourney({ outlet, params, signal }) {
   ensureInsightsStyle();
   const userId = params.userId;
 
-  const wrap = document.createElement('section');
-  wrap.className = 'u-container insights';
-  wrap.innerHTML = `
-    <div id="uj-header"></div>
-    ${tabStripHtml('analytics')}
-    <ui-grid cols="4" gap="4" id="uj-kpis"></ui-grid>
-
-    <ui-card>
-      <span slot="title">Recent journey</span>
-      <div id="uj-journey"></div>
-      <small class="u-text-muted">Routes visited during this user's most recent session, in order.</small>
-    </ui-card>
-
-    <div id="uj-sessions"></div>
-  `;
-  outlet.appendChild(wrap);
-
   const draw = async () => {
-    const user = await mockApi.getUser(userId);
-    if (signal?.aborted) return;
-
-    wrap.querySelector('#uj-header').innerHTML = `
-      <page-header
-        eyebrow="Insights · Analytics"
-        title="${escapeHtml(user?.name ?? 'Unknown user')}"
-        description="${escapeHtml([user?.title, user?.team].filter(Boolean).join(' · ') || 'User journey')}">
-        <div slot="actions">
-          <ui-button variant="ghost" id="uj-back">← Back to analytics</ui-button>
-        </div>
-      </page-header>
-    `;
-    wrap.querySelector('#uj-back').addEventListener('click', () => navigate('/insights/analytics'));
-
-    const [metrics, sessions] = await Promise.all([
+    const [user, metrics, sessions] = await Promise.all([
+      mockApi.getUser(userId),
       mockApi.getAnalyticsMetrics({ userId }),
       mockApi.listSessions({ userId }),
     ]);
     if (signal?.aborted) return;
 
-    const kpiEl = wrap.querySelector('#uj-kpis');
-    kpiEl.innerHTML = [
-      `<metric-card label="Sessions" value="${metrics.totalSessions}" tone="flat"></metric-card>`,
-      `<metric-card label="Page views" value="${metrics.totalPageViews}" tone="flat"></metric-card>`,
-      `<metric-card label="Clicks" value="${metrics.totalClicks}" tone="flat"></metric-card>`,
-      `<metric-card label="Avg session" value="${escapeHtml(formatDurationMs(metrics.avgSessionDurationMs))}" tone="flat"></metric-card>`,
-    ].join('');
+    const descParts = [user?.title, user?.team].filter(Boolean);
+    const desc = descParts.length ? descParts.join(' · ') : 'User journey';
 
-    await renderJourney(wrap.querySelector('#uj-journey'), userId, sessions);
+    // Build detached so page-header's connectedCallback sees its slotted children.
+    const wrap = document.createElement('section');
+    wrap.className = 'u-container insights';
+    wrap.innerHTML = `
+      <page-header
+        eyebrow="Insights · Analytics"
+        title="${escapeHtml(user?.name ?? 'Unknown user')}"
+        description="${escapeHtml(desc)}">
+        <div slot="actions">
+          <ui-button variant="ghost" id="uj-back">← Back to analytics</ui-button>
+        </div>
+      </page-header>
+
+      ${tabStripHtml('analytics')}
+
+      <ui-grid cols="4" gap="4">
+        <metric-card label="Sessions" value="${metrics.totalSessions}" tone="flat"></metric-card>
+        <metric-card label="Page views" value="${metrics.totalPageViews}" tone="flat"></metric-card>
+        <metric-card label="Clicks" value="${metrics.totalClicks}" tone="flat"></metric-card>
+        <metric-card label="Avg session" value="${escapeHtml(formatDurationMs(metrics.avgSessionDurationMs))}" tone="flat"></metric-card>
+      </ui-grid>
+
+      <ui-card>
+        <span slot="title">Recent journey</span>
+        <div id="uj-journey"></div>
+        <small class="u-text-muted">Routes visited during this user's most recent session, in order.</small>
+      </ui-card>
+
+      <div id="uj-sessions"></div>
+    `;
+
+    outlet.replaceChildren(wrap);
+
+    wrap.querySelector('#uj-back')?.addEventListener('click', () => navigate('/insights/analytics'));
+
+    await renderJourney(wrap.querySelector('#uj-journey'), sessions);
     renderSessionsTable(wrap.querySelector('#uj-sessions'), sessions);
   };
 
-  draw();
+  await draw();
 
   const off = [
     appBus.on('analytics:change', draw),
@@ -77,7 +76,8 @@ export async function mountUserJourney({ outlet, params, signal }) {
   signal?.addEventListener('abort', () => off.forEach((fn) => fn()));
 }
 
-async function renderJourney(el, userId, sessions) {
+async function renderJourney(el, sessions) {
+  if (!el) return;
   if (!sessions.length) {
     el.innerHTML = `<div class="insights-empty">No sessions recorded for this user yet.</div>`;
     return;
@@ -106,6 +106,7 @@ async function renderJourney(el, userId, sessions) {
 }
 
 function renderSessionsTable(slot, sessions) {
+  if (!slot) return;
   slot.innerHTML = '';
   const shell = document.createElement('data-table-shell');
   shell.setAttribute('title', 'Sessions');
