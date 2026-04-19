@@ -55,7 +55,7 @@ class AppRoot extends HTMLElement {
     const items = getNavItems();
     const linkHtml = (item, variant) => `
       <a class="nav-link nav-link--${variant}" href="#${item.path}" data-path="${item.path}">
-        <span class="nav-link__icon" aria-hidden="true">${item.icon ?? '•'}</span>
+        <span class="nav-link__icon" aria-hidden="true">${(item.icon ?? '•')}\uFE0E</span>
         <span class="nav-link__label">${item.label}</span>
       </a>
     `;

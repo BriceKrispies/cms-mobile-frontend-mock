@@ -104,7 +104,11 @@
     transition: color var(--duration-fast) var(--ease-standard),
                 background var(--duration-fast) var(--ease-standard);
   }
-  .nav-link__icon { font-size: 1.1rem; }
+  .nav-link__icon {
+    font-size: 1.1rem;
+    font-variant-emoji: text;
+    font-family: 'Segoe UI Symbol', 'Apple Symbols', 'Noto Sans Symbols 2', 'Noto Sans Symbols', sans-serif;
+  }
   .nav-link.is-active { color: var(--color-primary); }
 
   .nav-link--bottom {
