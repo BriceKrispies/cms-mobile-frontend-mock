@@ -28,6 +28,85 @@
     gap: var(--space-2);
   }
 
+  .data-table-shell__controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: flex-end;
+    padding: var(--space-3);
+    background: var(--color-surface-alt);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+  .data-table-shell__controls[hidden] { display: none; }
+
+  .dts-ctrl-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: flex-end;
+  }
+  .dts-ctrl-group--end { margin-left: auto; }
+
+  .dts-ctrl {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+  .dts-ctrl__label {
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+    font-size: 0.65rem;
+  }
+  .dts-ctrl__input {
+    font: inherit;
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    min-width: 9rem;
+  }
+  .dts-ctrl__input:focus-visible {
+    outline: 2px solid var(--color-primary, currentColor);
+    outline-offset: 1px;
+  }
+  .dts-ctrl__group {
+    display: flex;
+    gap: var(--space-1);
+  }
+  .dts-ctrl__dir {
+    font: inherit;
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    cursor: pointer;
+    min-width: 2.25rem;
+  }
+  .dts-ctrl__dir[disabled] { opacity: 0.4; cursor: not-allowed; }
+  .dts-ctrl__reset {
+    align-self: flex-end;
+    font: inherit;
+    font-size: var(--font-size-xs);
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+  }
+  .dts-ctrl__reset:hover { color: var(--color-text); border-color: var(--color-border); }
+
+  @media (max-width: 48rem) {
+    .dts-ctrl-group--end { margin-left: 0; }
+    .dts-ctrl__input { min-width: 0; width: 100%; }
+    .dts-ctrl { flex: 1 1 10rem; min-width: 0; }
+  }
+
   /* Show cards on mobile, table on desktop. Dual-render keeps the
      composite logic simple and lets CSS make the switch instantly. */
   .data-table-shell__table  { display: none; }
