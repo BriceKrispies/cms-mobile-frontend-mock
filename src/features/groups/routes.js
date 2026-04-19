@@ -52,10 +52,21 @@ async function mountList({ outlet, signal }) {
     });
     shell.setAttribute('count', String(rows.length));
     shell.columns = [
-      { key: 'name',   label: 'Name', priority: 'title' },
-      { key: 'count',  label: 'Members', priority: 'subtitle', render: (g) => `${g.count} ${g.count === 1 ? 'person' : 'people'}${g.errorCount ? ` · ${g.errorCount} issue${g.errorCount === 1 ? '' : 's'}` : ''}` },
-      { key: 'description', label: 'Description', render: (g) => g.description || '—' },
-      { key: 'source', label: 'Source', render: (g) => g.source === 'seed' ? 'Built-in' : 'Custom' },
+      { key: 'name', label: 'Name', priority: 'title',
+        sortable: true, filter: 'text' },
+      { key: 'count', label: 'Members', priority: 'subtitle',
+        sortable: true, type: 'number',
+        sortValue: (g) => g.count,
+        render: (g) => `${g.count} ${g.count === 1 ? 'person' : 'people'}${g.errorCount ? ` · ${g.errorCount} issue${g.errorCount === 1 ? '' : 's'}` : ''}` },
+      { key: 'description', label: 'Description',
+        filter: 'text',
+        filterValue: (g) => g.description || '',
+        render: (g) => g.description || '—' },
+      { key: 'source', label: 'Source',
+        sortable: true, filter: 'enum',
+        filterValue: (g) => g.source === 'seed' ? 'Built-in' : 'Custom',
+        sortValue: (g) => g.source === 'seed' ? 'Built-in' : 'Custom',
+        render: (g) => g.source === 'seed' ? 'Built-in' : 'Custom' },
     ];
     shell.rows = rows;
   };
