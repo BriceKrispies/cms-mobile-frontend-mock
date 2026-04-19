@@ -27,4 +27,83 @@
     display: flex;
     gap: var(--space-2);
   }
+
+  /* Show cards on mobile, table on desktop. Dual-render keeps the
+     composite logic simple and lets CSS make the switch instantly. */
+  .data-table-shell__table  { display: none; }
+  .data-table-shell__cards  { display: flex; flex-direction: column; gap: var(--space-2); }
+
+  @media (min-width: 48rem) {
+    .data-table-shell__table { display: block; }
+    .data-table-shell__cards { display: none; }
+  }
+
+  .data-table-shell__empty {
+    padding: var(--space-6);
+    text-align: center;
+    color: var(--color-text-muted);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+
+  .dts-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    width: 100%;
+    transition: background var(--duration-fast) var(--ease-standard),
+                border-color var(--duration-fast) var(--ease-standard);
+  }
+  .dts-card:hover,
+  .dts-card:focus-visible {
+    background: var(--color-surface-alt);
+    border-color: var(--color-text-muted);
+    outline: none;
+  }
+
+  .dts-card__title {
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+  }
+
+  .dts-card__subtitle {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+  }
+
+  .dts-card__meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-1) var(--space-3);
+    margin: 0;
+    font-size: var(--font-size-xs);
+  }
+  .dts-card__meta > div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .dts-card__meta dt {
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+    font-size: 0.65rem;
+  }
+  .dts-card__meta dd {
+    margin: 0;
+    color: var(--color-text);
+    overflow-wrap: break-word;
+  }
 }

@@ -46,8 +46,8 @@ async function mountList({ outlet, signal }) {
     const fields = mockApi.listFields();
     shell.setAttribute('count', String(fields.length));
     shell.columns = [
-      { key: 'id',     label: 'Id' },
-      { key: 'label',  label: 'Label' },
+      { key: 'label',  label: 'Label',  priority: 'title' },
+      { key: 'id',     label: 'Id',     priority: 'subtitle' },
       { key: 'type',   label: 'Type',   render: (f) => TYPES[f.type]?.label ?? f.type },
       { key: 'source', label: 'Source', render: (f) => f.source === 'seed' ? 'Built-in' : 'Custom' },
       {
@@ -76,17 +76,12 @@ async function mountList({ outlet, signal }) {
   const off = appBus.on('schema:change', render);
   signal?.addEventListener('abort', off);
 
-  // Rows live inside ui-table's shadow DOM, so listen on the shell and
-  // walk composedPath() to find the original <tr> the user clicked.
-  const delegate = (e) => {
-    const tr = e.composedPath().find((el) => el && el.tagName === 'TR');
-    if (!tr) return;
-    const firstTd = tr.querySelector('td');
-    const id = firstTd?.textContent?.trim();
-    if (id) navigate(`/schema/${id}`);
+  const onRowClick = (e) => {
+    const row = e.detail?.row;
+    if (row?.id) navigate(`/schema/${row.id}`);
   };
-  shell.addEventListener('click', delegate);
-  signal?.addEventListener('abort', () => shell.removeEventListener('click', delegate));
+  shell.addEventListener('row-click', onRowClick);
+  signal?.addEventListener('abort', () => shell.removeEventListener('row-click', onRowClick));
 }
 
 // --- Shared form rendering (used by both new and edit) --------------------

@@ -52,9 +52,9 @@ async function mountList({ outlet, signal }) {
     });
     shell.setAttribute('count', String(rows.length));
     shell.columns = [
-      { key: 'name',   label: 'Name' },
+      { key: 'name',   label: 'Name', priority: 'title' },
+      { key: 'count',  label: 'Members', priority: 'subtitle', render: (g) => `${g.count} ${g.count === 1 ? 'person' : 'people'}${g.errorCount ? ` · ${g.errorCount} issue${g.errorCount === 1 ? '' : 's'}` : ''}` },
       { key: 'description', label: 'Description', render: (g) => g.description || '—' },
-      { key: 'count',  label: 'Members', render: (g) => `${g.count}${g.errorCount ? ` ⚠️ ${g.errorCount}` : ''}` },
       { key: 'source', label: 'Source', render: (g) => g.source === 'seed' ? 'Built-in' : 'Custom' },
     ];
     shell.rows = rows;
@@ -69,18 +69,12 @@ async function mountList({ outlet, signal }) {
   ];
   signal?.addEventListener('abort', () => off.forEach((fn) => fn()));
 
-  // Row click → /groups/:id
-  const delegate = (e) => {
-    const tr = e.composedPath().find((el) => el && el.tagName === 'TR');
-    if (!tr) return;
-    const cells = tr.querySelectorAll('td');
-    if (!cells.length) return;
-    const name = cells[0].textContent?.trim();
-    const row = mockApi.listGroups().find((g) => g.name === name);
-    if (row) navigate(`/groups/${row.id}`);
+  const onRowClick = (e) => {
+    const row = e.detail?.row;
+    if (row?.id) navigate(`/groups/${row.id}`);
   };
-  shell.addEventListener('click', delegate);
-  signal?.addEventListener('abort', () => shell.removeEventListener('click', delegate));
+  shell.addEventListener('row-click', onRowClick);
+  signal?.addEventListener('abort', () => shell.removeEventListener('row-click', onRowClick));
 }
 
 // --- Shared form (new + edit) ---------------------------------------------

@@ -5,6 +5,11 @@ import { mockApi } from '../../mock-data/api/mockApi.js';
 // here is the only way to surface a new column. Zero hardcoded labels
 // or formatters.
 const COLUMN_IDS = ['name', 'title', 'team', 'department', 'level', 'location', 'hiredAt'];
+const PRIORITY = {
+  name: 'title',
+  title: 'subtitle',
+  team: 'subtitle',
+};
 
 function buildColumns() {
   return COLUMN_IDS
@@ -14,6 +19,7 @@ function buildColumns() {
       return {
         key: id,
         label: field.label,
+        priority: PRIORITY[id],
         render: (user) => mockApi.formatValue(id, user[id]),
       };
     })
