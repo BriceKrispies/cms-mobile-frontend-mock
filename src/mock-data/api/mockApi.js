@@ -122,6 +122,123 @@ function enrichCampaign(c) {
   return out;
 }
 
+// -------- Message board: storage + enrichment -------------------------------
+
+const MESSAGES_KEY = 'cms:messages';
+const MESSAGE_ID_RE = /^msg_[a-zA-Z0-9_]+$/;
+const REPLY_ID_RE = /^rep_[a-zA-Z0-9_]+$/;
+const ALLOWED_EMOJIS = new Set(['👍', '❤️', '🎉', '👀']);
+
+function loadUserMessages() {
+  try {
+    const raw = localStorage.getItem(MESSAGES_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+}
+function saveUserMessages() {
+  try { localStorage.setItem(MESSAGES_KEY, JSON.stringify(userMessages)); }
+  catch { /* ignore */ }
+}
+let userMessages = loadUserMessages();
+
+function effectiveMessages() {
+  const overlayIds = new Set(userMessages.map((m) => m.id));
+  const seed = db().messages ?? [];
+  return [...userMessages, ...seed.filter((m) => !overlayIds.has(m.id))];
+}
+
+// Locate a message in the overlay; if it only exists in the seed, clone it
+// into the overlay so subsequent mutations persist without touching fixtures.
+function upsertOverlay(id) {
+  let msg = userMessages.find((m) => m.id === id);
+  if (msg) return msg;
+  const seed = (db().messages ?? []).find((m) => m.id === id);
+  if (!seed) return null;
+  msg = structuredClone(seed);
+  msg.reactions = Array.isArray(msg.reactions) ? msg.reactions : [];
+  msg.replies = Array.isArray(msg.replies) ? msg.replies : [];
+  userMessages.push(msg);
+  return msg;
+}
+
+function cleanIncomingMessage(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  if (typeof raw.id !== 'string' || !MESSAGE_ID_RE.test(raw.id)) return null;
+  if (typeof raw.authorId !== 'string' || !raw.authorId) return null;
+  if (typeof raw.body !== 'string' || !raw.body.trim()) return null;
+  const hasGroup = typeof raw.audienceGroupId === 'string' && raw.audienceGroupId;
+  const hasDef = raw.audienceDefinition && typeof raw.audienceDefinition === 'object';
+  if (!hasGroup && !hasDef) return null;
+  return {
+    id: raw.id,
+    authorId: raw.authorId,
+    body: raw.body.trim(),
+    audienceGroupId: hasGroup ? raw.audienceGroupId : null,
+    audienceDefinition: hasDef ? raw.audienceDefinition : null,
+    createdAt: raw.createdAt ?? new Date().toISOString(),
+    reactions: [],
+    replies: [],
+  };
+}
+
+function resolveMessageAudience(m) {
+  if (m.audienceGroupId) {
+    const group = groups.getGroup(m.audienceGroupId);
+    if (!group) {
+      return { ids: new Set(), count: 0, name: m.audienceGroupId, errors: ['Group missing'], source: 'group-missing' };
+    }
+    const users = db().users.map(cleanUser);
+    const { ids, errors } = groups.resolveGroup(m.audienceGroupId, users);
+    return { ids, count: ids.size, name: group.name, errors, source: 'group' };
+  }
+  if (m.audienceDefinition) {
+    const users = db().users.map(cleanUser);
+    const { ids, errors } = groups.previewDefinition(m.audienceDefinition, users);
+    return { ids, count: ids.size, name: 'Custom audience', errors, source: 'adhoc' };
+  }
+  return { ids: new Set(), count: 0, name: 'Unspecified', errors: [], source: 'legacy' };
+}
+
+function enrichMessage(m) {
+  const audience = resolveMessageAudience(m);
+  const reactionTotals = {};
+  for (const r of m.reactions ?? []) {
+    reactionTotals[r.emoji] = (reactionTotals[r.emoji] ?? 0) + 1;
+  }
+  return {
+    id: m.id,
+    author: joinUser(m.authorId),
+    authorId: m.authorId,
+    body: m.body,
+    audienceGroupId: m.audienceGroupId ?? null,
+    audienceDefinition: m.audienceDefinition ?? null,
+    audience: {
+      id: m.audienceGroupId ?? null,
+      name: audience.name,
+      count: audience.count,
+      errors: audience.errors,
+      source: audience.source,
+    },
+    audienceMemberIds: [...audience.ids],
+    reactions: (m.reactions ?? []).map((r) => ({ ...r })),
+    reactionTotals,
+    replies: (m.replies ?? [])
+      .map((r) => ({
+        id: r.id,
+        authorId: r.authorId,
+        author: joinUser(r.authorId),
+        body: r.body,
+        createdAt: r.createdAt,
+        when: formatRelative(r.createdAt),
+      }))
+      .sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1)),
+    createdAt: m.createdAt,
+    when: formatRelative(m.createdAt),
+  };
+}
+
 function formatRelative(iso) {
   const then = new Date(iso).getTime();
   const now = Date.now();
@@ -290,6 +407,87 @@ export const mockApi = {
     saveUserCampaigns();
     appBus.emit('campaigns:change', { action: 'create', id: clean.id });
     return enrichCampaign(clean);
+  },
+
+  // Message board
+  listMessages({ viewerId } = {}) {
+    return call('listMessages', () => {
+      const rows = effectiveMessages()
+        .map(enrichMessage)
+        .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+      if (!viewerId) return rows;
+      return rows.filter((m) => m.authorId === viewerId || m.audienceMemberIds.includes(viewerId));
+    });
+  },
+  getMessage(id) {
+    return call('getMessage', () => {
+      const raw = effectiveMessages().find((m) => m.id === id);
+      return raw ? enrichMessage(raw) : null;
+    });
+  },
+  createMessage(def) {
+    const clean = cleanIncomingMessage(def);
+    if (!clean) throw new Error('Invalid message');
+    const exists = effectiveMessages().some((m) => m.id === clean.id);
+    if (exists) throw new Error(`Message "${clean.id}" already exists`);
+    userMessages.push(clean);
+    saveUserMessages();
+    appBus.emit('messages:change', { action: 'create', id: clean.id });
+    return enrichMessage(clean);
+  },
+  addReaction(messageId, userId, emoji) {
+    if (!ALLOWED_EMOJIS.has(emoji)) throw new Error(`Unsupported reaction: ${emoji}`);
+    if (!userId) throw new Error('userId required to react');
+    const msg = upsertOverlay(messageId);
+    if (!msg) throw new Error(`Unknown message: ${messageId}`);
+    const existing = msg.reactions.find((r) => r.userId === userId && r.emoji === emoji);
+    if (!existing) msg.reactions.push({ userId, emoji });
+    saveUserMessages();
+    appBus.emit('messages:change', { action: 'react', id: messageId });
+    return enrichMessage(msg);
+  },
+  removeReaction(messageId, userId, emoji) {
+    const msg = upsertOverlay(messageId);
+    if (!msg) throw new Error(`Unknown message: ${messageId}`);
+    msg.reactions = msg.reactions.filter((r) => !(r.userId === userId && r.emoji === emoji));
+    saveUserMessages();
+    appBus.emit('messages:change', { action: 'react', id: messageId });
+    return enrichMessage(msg);
+  },
+  addReply(messageId, { authorId, body } = {}) {
+    if (!authorId) throw new Error('authorId required');
+    if (typeof body !== 'string' || !body.trim()) throw new Error('Reply body required');
+    const msg = upsertOverlay(messageId);
+    if (!msg) throw new Error(`Unknown message: ${messageId}`);
+    const reply = {
+      id: `rep_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+      authorId,
+      body: body.trim(),
+      createdAt: new Date().toISOString(),
+    };
+    msg.replies.push(reply);
+    saveUserMessages();
+    appBus.emit('messages:change', { action: 'reply', id: messageId });
+    return enrichMessage(msg);
+  },
+  deleteReply(messageId, replyId) {
+    if (!REPLY_ID_RE.test(replyId)) throw new Error(`Invalid reply id: ${replyId}`);
+    const msg = upsertOverlay(messageId);
+    if (!msg) throw new Error(`Unknown message: ${messageId}`);
+    msg.replies = msg.replies.filter((r) => r.id !== replyId);
+    saveUserMessages();
+    appBus.emit('messages:change', { action: 'reply', id: messageId });
+    return enrichMessage(msg);
+  },
+  resetMessages() {
+    const removed = userMessages.length;
+    userMessages = [];
+    try { localStorage.removeItem(MESSAGES_KEY); } catch { /* ignore */ }
+    appBus.emit('messages:change', { action: 'reset', removed });
+    return { removed };
+  },
+  listReactionEmojis() {
+    return [...ALLOWED_EMOJIS];
   },
 
   // People

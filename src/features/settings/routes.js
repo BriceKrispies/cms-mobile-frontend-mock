@@ -3,6 +3,7 @@ import { escapeHtml } from '../../utils/dom.js';
 import { appBus } from '../../utils/events.js';
 import { renderAppearance } from './appearance.js';
 import { getActingUserId, setActingUserId } from '../../analytics/storage.js';
+import { renderDataStorage } from './data-storage.js';
 
 const styleUrl = new URL('./settings.css', import.meta.url).href;
 let styleInjected = false;
@@ -31,6 +32,7 @@ async function mount({ outlet, signal }) {
       <div id="scenario-slot"></div>
       <div id="acting-slot"></div>
       <div id="api-slot"></div>
+      <div id="data-slot"></div>
     </ui-stack>
   `;
   outlet.appendChild(wrap);
@@ -40,6 +42,7 @@ async function mount({ outlet, signal }) {
   disposers.push(renderScenario(wrap.querySelector('#scenario-slot')));
   disposers.push(renderActingAs(wrap.querySelector('#acting-slot')));
   disposers.push(renderApiSimulation(wrap.querySelector('#api-slot')));
+  disposers.push(renderDataStorage(wrap.querySelector('#data-slot')));
 
   signal?.addEventListener('abort', () => disposers.forEach((fn) => fn?.()));
 }

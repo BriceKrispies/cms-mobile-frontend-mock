@@ -4,6 +4,7 @@ import { campaigns } from '../fixtures/campaigns.js';
 import { approvals } from '../fixtures/approvals.js';
 import { rewards } from '../fixtures/rewards.js';
 import { companyValues } from '../fixtures/values.js';
+import { messages } from '../fixtures/messages.js';
 import { makeUsers } from '../factories/user.js';
 import { makeRecognitions } from '../factories/recognition.js';
 import { makeAnalyticsSessions } from '../fixtures/analytics.js';
@@ -34,6 +35,7 @@ export const heavyScenario = {
     campaigns,
     approvals,
     rewards,
+    messages,
     companyValues,
     dashboardMetrics: [
       { id: 'm_recognitions', label: 'Recognitions this month', value: '12,840', delta: '+24% vs. last month', tone: 'up' },

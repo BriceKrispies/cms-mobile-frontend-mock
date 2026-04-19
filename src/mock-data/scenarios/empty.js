@@ -10,6 +10,7 @@ export const emptyScenario = {
     campaigns: [],
     approvals: [],
     rewards: [],
+    messages: [],
     companyValues,
     dashboardMetrics: [
       { id: 'm_recognitions', label: 'Recognitions this month', value: '0',  delta: 'New', tone: 'flat' },

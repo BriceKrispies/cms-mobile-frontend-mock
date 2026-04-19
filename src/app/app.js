@@ -33,6 +33,7 @@ document.head.appendChild(appStyle);
 // Register all features
 import '../features/dashboard/index.js';
 import '../features/recognitions/index.js';
+import '../features/messages/index.js';
 import '../features/approvals/index.js';
 import '../features/campaigns/index.js';
 import '../features/people/index.js';
