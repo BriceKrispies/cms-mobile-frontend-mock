@@ -16,12 +16,21 @@ function buildColumns() {
     .map((id) => {
       const field = mockApi.getField(id);
       if (!field) return null;
-      return {
+      const col = {
         key: id,
         label: field.label,
         priority: PRIORITY[id],
+        sortable: true,
         render: (user) => mockApi.formatValue(id, user[id]),
       };
+      if (field.type === 'number') {
+        col.type = 'number';
+      } else if (field.type === 'date' || field.type === 'timestamp') {
+        col.type = 'date';
+      } else {
+        col.filter = field.enumValues?.length ? 'enum' : 'text';
+      }
+      return col;
     })
     .filter(Boolean);
 }

@@ -46,10 +46,20 @@ async function mountList({ outlet, signal }) {
     const fields = mockApi.listFields();
     shell.setAttribute('count', String(fields.length));
     shell.columns = [
-      { key: 'label',  label: 'Label',  priority: 'title' },
-      { key: 'id',     label: 'Id',     priority: 'subtitle' },
-      { key: 'type',   label: 'Type',   render: (f) => TYPES[f.type]?.label ?? f.type },
-      { key: 'source', label: 'Source', render: (f) => f.source === 'seed' ? 'Built-in' : 'Custom' },
+      { key: 'label', label: 'Label', priority: 'title',
+        sortable: true, filter: 'text' },
+      { key: 'id', label: 'Id', priority: 'subtitle',
+        sortable: true, filter: 'text' },
+      { key: 'type', label: 'Type',
+        sortable: true, filter: 'enum',
+        sortValue: (f) => TYPES[f.type]?.label ?? f.type,
+        filterValue: (f) => TYPES[f.type]?.label ?? f.type,
+        render: (f) => TYPES[f.type]?.label ?? f.type },
+      { key: 'source', label: 'Source',
+        sortable: true, filter: 'enum',
+        sortValue: (f) => f.source === 'seed' ? 'Built-in' : 'Custom',
+        filterValue: (f) => f.source === 'seed' ? 'Built-in' : 'Custom',
+        render: (f) => f.source === 'seed' ? 'Built-in' : 'Custom' },
       {
         key: 'constraints',
         label: 'Constraints',

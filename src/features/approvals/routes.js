@@ -18,10 +18,21 @@ async function mount({ outlet }) {
 
   const shell = wrap.querySelector('data-table-shell');
   shell.columns = [
-    { key: 'requestedFor', label: 'For', priority: 'title', render: (r) => r.requestedFor.name },
-    { key: 'requestedBy', label: 'Requested by', priority: 'subtitle', render: (r) => `from ${r.requestedBy.name}` },
-    { key: 'points', label: 'Points' },
-    { key: 'submittedAt', label: 'Submitted', render: (r) => new Date(r.submittedAt).toLocaleDateString() },
+    { key: 'requestedFor', label: 'For', priority: 'title',
+      sortable: true, filter: 'text',
+      sortValue: (r) => r.requestedFor.name,
+      filterValue: (r) => r.requestedFor.name,
+      render: (r) => r.requestedFor.name },
+    { key: 'requestedBy', label: 'Requested by', priority: 'subtitle',
+      sortable: true, filter: 'text',
+      sortValue: (r) => r.requestedBy.name,
+      filterValue: (r) => r.requestedBy.name,
+      render: (r) => `from ${r.requestedBy.name}` },
+    { key: 'points', label: 'Points',
+      sortable: true, type: 'number' },
+    { key: 'submittedAt', label: 'Submitted',
+      sortable: true, type: 'date',
+      render: (r) => new Date(r.submittedAt).toLocaleDateString() },
     { key: 'status', label: 'Status', render: (r) => r.status },
   ];
   shell.rows = rows;
